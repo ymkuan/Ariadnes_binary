@@ -1,0 +1,14 @@
+# Template priorfile.
+#teff    Normal             mu,sig
+#logg    Uniform            a,b
+#z       Fixed              Z
+#dist    TruncatedNormal    mu,sig,upper,lower
+#rad  default            ---
+#Av      Normal             mu,sig
+teff  default ----
+logg  default ----
+z default ----
+# norm  default ----  # Uncomment this line to use normalization constant
+dist  default ----  # Comment if using normalization constant
+rad  default ----  # Comment if using normalization constant
+Av  default ----
