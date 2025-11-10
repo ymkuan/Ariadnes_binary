@@ -7,9 +7,9 @@ from pkg_resources import resource_filename
 
 __ROOT__ = '/'.join(os.path.abspath(inspect.getfile(inspect.currentframe())
                                     ).split('/')[:-1])
-gridsdir = resource_filename('astroAriadne_ymk_binary', 'Datafiles/model_grids')
-priorsdir = resource_filename('astroAriadne_ymk_binary', 'Datafiles/prior')
-filesdir = resource_filename('astroAriadne_ymk_binary', 'Datafiles')
+gridsdir = resource_filename('astroAriadne_binary', 'Datafiles/model_grids')
+priorsdir = resource_filename('astroAriadne_binary', 'Datafiles/prior')
+filesdir = resource_filename('astroAriadne_binary', 'Datafiles')
 
 try:
     modelsdir = os.environ['ARIADNE_MODELS']

@@ -397,7 +397,7 @@ class Fitter:
         # teff, logg, z, dist, rad, Av, noise
         # or
         # teff, logg, z, norm, Av, noise
-        # 把这个部分添加到上边了 npars = 10 if not self.norm else 5
+
         npars += self.star.used_filters.sum()
         npars = int(npars)
         self.coordinator = np.zeros(npars)  # 1 for fixed params,先假定都是0free
@@ -530,9 +530,7 @@ class Fitter:
                     defaults['rad1'] = st.uniform(loc=0.04, scale = 0.55-0.04)
                 if i == 1 and not self._norm_2:
                     defaults['rad2'] = st.uniform(loc=0.04, scale = 0.55-0.04)
-        # 半径的范围来自质量半径关系，下边文章图4
-        # https://ui.adsabs.harvard.edu/abs/2020arXiv201201242A/abstract
-        # 热压矮星是根据雷振兴的质量分布文章，里面有半径的一个分布，集中在0.1-0.4 Rsun
+
                       
         # Normalization prior setup.
         #else:

@@ -7,6 +7,13 @@ If multiple models are fit for, then ARIADNE automatically averages the
 parameters posteriors as in the Bayesian Model Average framework. This
 averages over the models and thus the averaged posteriors account for model
 specific uncertainties.
+
+
+Mingkuan Yang has modified ARIADNE to make it suitable for binary SED fitting 
+by adding the Koester and TMAP models, which are specifically designed for 
+white dwarfs and hot stars, respectively. 
+The modified version allows combinations of these  models to simultaneously fit 
+the composite SEDs of binary systems.
 """
 from pkg_resources import get_distribution
 

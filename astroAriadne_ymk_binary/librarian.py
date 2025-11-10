@@ -630,10 +630,13 @@ class Librarian:
             mask = cat['recno'] == int(self.ids['APASS'])
             self._retrieve_from_cat(cat[mask], 'APASS')
         except KeyError:
-            print("'recno' column not found, using '_r' for nearest source selection.")
-            nearest_idx = np.argmin(cat['_r'])  # 找到 '_r' 列中最小值对应的索引
-            #mask = cat.index == nearest_idx  # 构建布尔掩码
-            self._retrieve_from_cat(cat[nearest_idx], 'APASS')
+            #print("'recno' column not found, using '_r' for nearest source selection.")
+            #nearest_idx = np.argmin(cat['_r'])  
+            #mask = cat.index == nearest_idx  
+            #self._retrieve_from_cat(cat[nearest_idx], 'APASS')
+
+            CatalogWarning('APASS', 5).warn()
+
 
     def _get_wise(self, cat):
         print('Checking catalog All-WISE')

@@ -493,11 +493,11 @@ class SEDPlotter:
         ax.set_xscale('log', nonpositive='clip')
         ax.set_yscale('log', nonpositive='clip')
         ax_r.set_xscale('log', nonpositive='clip')
-        ax_r.set_xlabel(r'$\lambda (\mu m)$',
+        ax_r.set_xlabel(r'$\lambda [\mu m]$',
                         fontsize=self.fontsize,
                         fontname=self.fontname
                         )
-        ax.set_ylabel(r'$\lambda$F$_\lambda$ (erg cm$^{-2}$s$^{-1}$)',
+        ax.set_ylabel(r'$\lambda$F$_\lambda$ [erg cm$^{-2}$s$^{-1}$]',
                       fontsize=self.fontsize,
                       fontname=self.fontname
                       )
@@ -562,15 +562,285 @@ class SEDPlotter:
                          loc = 'center', pad = self.title_pad)
         
         # Output the maximum y-axis limit of the residual plot
-        residual_max = ax_r.get_ylim()[1]  # Get the maximum value of the residual plot's y-axis
-        with open(f'{self.out_folder}/residual_max.txt', 'w') as f:
-            f.write(f"Maximum residual: {residual_max}\n")
+        n_fixed = np.sum(self.coordinator)
+        n_free = n_filt - n_pars + n_fixed
+
+        model_flux = model_grid(self.theta, filters, wave, self.interpolator_1, self.interpolator_2, 
+                                self.norm_1, self.norm_2, self.av_law, self.grid_1, self.grid_2)
+
+        chi2 = np.sum(((flxs - model_flux)/errs)**2)
+        re_chi2 = chi2 / n_free
+
+        errs_vgf = np.maximum(errs, 0.02 * flxs)
+        chi2_vgf = np.sum(((flxs - model_flux) / errs_vgf) **2 ) / n_free
+        errs_vgfb = np.maximum(errs, 0.1 * flxs)
+        chi2_vgfb = np.sum(((flxs - model_flux) / errs_vgfb) **2 ) / n_free 
+        resi_filters = abs(flxs - model_flux) / abs(flxs)
+        max_resi = np.max(resi_filters)
+
+        with open(f'{self.out_folder}/visual_goodness_of_fit.txt', 'w') as f:
+   
+            f.write("# ========== Goodness-of-Fit Metrics ==========\n")
+            f.write(f"{'Degrees of freedom:':<25} {n_free}\n")
+            f.write(f"{'Reduced χ²:':<25} {re_chi2:.4f}\n")
+            f.write(f"{'Vgf-adjusted χ²:':<25} {chi2_vgf:.4f}\n")
+            f.write(f"{'Vgfb-adjusted χ²:':<25} {chi2_vgfb:.4f}\n")
+            f.write(f"{'Max residual:':<25} {max_resi:.4f}\n\n") 
+
+            f.write("# ========== Filter Residuals ==========\n")
+            f.write("# Columns: Filter_Name  Residual  Remark\n")
+            f.write("# (* marks residuals > 0.5)\n")
+        
+            for idx in range(len(filters)):
+                name = filters[idx]
+                res = resi_filters[idx]
+        
+
+                remark = ""
+                if res > 0.5:
+                    remark = "(* needs check)"
+                elif idx < 2:  
+                    remark = "(first two)"
+            
+                f.write(f"{name:<15} {res:.4f}    {remark}\n")
+        pd.DataFrame({'Filter': filters, 'Residual': resi_filters}).to_csv(f'{self.out_folder}/fluxs_residuals.csv', index=False)
+
 
         if self.pdf:
             plt.savefig(f'{self.out_folder}/SED.pdf', bbox_inches='tight')
         if self.png:
             plt.savefig(f'{self.out_folder}/SED.png', bbox_inches='tight')
         pass
+
+
+    def plot_SED_oc(self, title = None):
+        """Create the plot of the SED."""
+        if self.moddir is None:
+            print('Models directory not provided, skipping SED plot.')
+            return
+        print('Plotting SED')
+        # Get plot ylims.
+        ymin = (self.flux * self.wave).min()
+        ymax = (self.flux * self.wave).max()
+
+        if self.irx:
+            ymin = (self.irx_model * self.irx_wave).min()
+
+        n_filt = self.star.used_filters.sum()
+        n_pars = int(len(self.theta) - n_filt)
+
+        # Get models residuals
+        mask = self.star.filter_mask
+        mags = self.star.mags[mask]
+        flxs = self.star.flux[mask]
+        errs = self.star.flux_er[mask]
+        filters = self.star.filter_names[mask]
+        wave = self.star.wave[mask]
+
+        for i, th in enumerate(self.theta[n_pars:]):
+            mag = mags[i]
+            filt = filters[i]
+            _, er = mag_to_flux(mag, th, filt)
+            self.theta[n_pars + i] = er
+
+        residuals, errors = get_residuals(
+            self.theta, flxs, errs, wave, filters, self.interpolator_1, 
+            self.interpolator_2, self.norm_1, self.norm_2, 
+            self.av_law, self.grid_1, self.grid_2)
+
+        norm_res = residuals / flxs
+
+
+        f = plt.figure(figsize=self.figsize)
+        gs = GridSpec(2, 1, height_ratios=[3, 0.5], hspace=0.05)
+
+        ax = f.add_subplot(gs[0])
+        ax_r = f.add_subplot(gs[1])
+
+        min_flux, max_flux = self.SED(ax)
+        # ymin = min(min_flux, ymin)
+        ymax = max(max_flux, ymax)
+
+        # Model plot
+        ax.errorbar(self.wave, self.flux * self.wave,
+                    xerr=self.bandpass, yerr= self.flux_er * self.wave,
+                    fmt=',', ecolor=self.error_color, zorder=6,
+                    marker=None)
+        ax.scatter(self.wave, self.flux * self.wave,
+                   edgecolors='black', marker=self.marker, c=self.marker_colors,
+                   s=self.scatter_size, zorder=7, alpha=self.scatter_alpha)
+        ax.scatter(self.wave, self.model * self.wave,
+                   marker=self.marker_model,
+                   edgecolors=self.marker_colors_model, s=self.scatter_size,
+                   facecolor='none', zorder=8, lw=3)
+
+        if self.irx:
+            ax.errorbar(self.irx_wave, self.irx_flux * self.irx_wave,
+                        xerr=self.irx_bandpass, yerr=self.irx_flux_er,
+                        fmt=',', ecolor=self.irx_error_color, zorder=6,
+                        marker=None)
+            ax.scatter(self.irx_wave, self.irx_flux * self.irx_wave,
+                       edgecolors='black', marker=self.marker,
+                       c=self.marker_colors_irx, s=self.scatter_size, zorder=7,
+                       alpha=self.scatter_alpha)
+            ax.scatter(self.irx_wave, self.irx_model * self.irx_wave,
+                       marker=self.marker_model,
+                       edgecolors=self.marker_colors_model_irx,
+                       s=self.scatter_size, facecolor='none', zorder=8, lw=3)
+
+        # Residual plot
+        ax_r.axhline(y=0, lw=2, ls='--', c='k', alpha=.7)
+
+        ax_r.errorbar(self.wave, norm_res, zorder=3,
+                      xerr=self.bandpass, yerr=self.flux_er,
+                      fmt=',', ecolor=self.error_color, marker=None)
+        ax_r.scatter(self.wave, norm_res, zorder=3,
+                     edgecolors='black', marker=self.marker,
+                     c=self.marker_colors, s=self.scatter_size,
+                     alpha=self.scatter_alpha)
+        # ax_r.scatter(self.wave, norm_res,
+        #              marker=self.marker_model,
+        #              edgecolors=self.marker_colors_model, s=self.scatter_size,
+        #              facecolor='none', lw=3, zorder=10)
+
+        if self.irx:
+            irx_res = (self.irx_flux - self.irx_model) / self.irx_flux_er
+            ax_r.errorbar(self.irx_wave, np.zeros(self.irx_wave.shape[0]),
+                          xerr=self.irx_bandpass, yerr=self.irx_flux_er,
+                          fmt=',', ecolor=self.irx_error_color, marker=None)
+            ax_r.scatter(self.irx_wave, np.zeros(self.irx_wave.shape[0]),
+                         edgecolors='black', marker=self.marker,
+                         c=self.marker_colors_irx, s=self.scatter_size,
+                         alpha=self.scatter_alpha)
+            ax_r.scatter(self.irx_wave, irx_res,
+                         marker=self.marker_model,
+                         edgecolors=self.marker_colors_model_irx,
+                         s=self.scatter_size, facecolor='none', lw=3, zorder=10)
+
+        # Formatting
+        res_std = norm_res.std()
+        ax.set_ylim([ymin * 0.5, ymax * 1.8])
+        # ax_r.set_ylim([-5, 5])
+        ax_r.set_ylim([-5 * res_std, 5 * res_std])
+        ax.set_xscale('log', nonpositive='clip')
+        ax.set_yscale('log', nonpositive='clip')
+        ax_r.set_xscale('log', nonpositive='clip')
+        ax_r.set_xlabel(r'$\lambda [\mu m]$',
+                        fontsize=self.fontsize,
+                        fontname=self.fontname
+                        )
+        ax.set_ylabel(r'$\lambda$F$_\lambda$ [erg cm$^{-2}$s$^{-1}$]',
+                      fontsize=self.fontsize,
+                      fontname=self.fontname
+                      )
+        ax_r.set_ylabel('Residuals\n$[(O-C)/O]$',
+                        fontsize=self.fontsize-8,
+                        fontname=self.fontname
+                        )
+
+        ax.tick_params(
+            axis='both', which='major',
+            labelsize=self.tick_labelsize
+        )
+        ax.tick_params(
+            axis='both', which='minor',
+            labelsize=self.tick_labelsize
+        )
+        ax_r.tick_params(
+            axis='both', which='major',
+            labelsize=self.tick_labelsize
+        )
+        xticks = np.linspace(1, 10, 10)
+        if self.irx:
+            xticks = [1, 3, 5, 10, 20, 50, 100, 250]
+        ax_r.set_xticks(xticks)
+        ax_r.get_xaxis().set_major_formatter(ticker.ScalarFormatter())
+        ax.set_xticks(xticks)
+        ax.get_xaxis().set_major_formatter(ticker.NullFormatter())
+        ylocmin = ticker.LinearLocator(numticks=4)
+
+        ax_r.yaxis.set_minor_locator(ylocmin)
+        ax_r.yaxis.set_minor_formatter(ticker.NullFormatter())
+
+        xlims1 = [0.125, 6]
+        xlims2 = [0.25, 6]
+        if self.irx:
+            xlims1 = [0.125, 250]
+            xlims2 = [0.25, 250]
+
+        if 'GALEX_FUV' in self.star.filter_names[self.star.filter_mask] or \
+                'GALEX_NUV' in self.star.filter_names[self.star.filter_mask]:
+            ax.set_xlim(xlims1)
+            ax_r.set_xlim(xlims1)
+        else:
+            ax.set_xlim(xlims2)
+            ax_r.set_xlim(xlims2)
+
+        labels = [item.get_text() for item in ax.get_xticklabels()]
+
+        empty_string_labels = [''] * len(labels)
+        ax.set_xticklabels(empty_string_labels)
+
+        for tick in ax.get_yticklabels():
+            tick.set_fontname(self.fontname)
+        for tick in ax_r.get_yticklabels():
+            tick.set_fontname(self.fontname)
+        for tick in ax_r.get_xticklabels():
+            tick.set_fontname(self.fontname)
+
+        ax.legend(loc='upper right', fontsize = self.title_size-2, edgecolor = 'black')
+        if title is not None:
+            ax.set_title(title,fontsize = self.title_size, color = 'black', 
+                         loc = 'center', pad = self.title_pad)
+        
+        n_fixed = np.sum(self.coordinator)
+        n_free = n_filt - n_pars + n_fixed
+
+        model_flux = model_grid(self.theta, filters, wave, self.interpolator_1, self.interpolator_2, 
+                                self.norm_1, self.norm_2, self.av_law, self.grid_1, self.grid_2)
+
+        chi2 = np.sum(((flxs - model_flux)/errs)**2)
+        re_chi2 = chi2 / n_free
+
+        errs_vgf = np.maximum(errs, 0.02 * flxs)
+        chi2_vgf = np.sum(((flxs - model_flux) / errs_vgf) **2 ) / n_free
+        errs_vgfb = np.maximum(errs, 0.1 * flxs)
+        chi2_vgfb = np.sum(((flxs - model_flux) / errs_vgfb) **2 ) / n_free 
+        resi_filters = abs(flxs - model_flux) / abs(flxs)
+        max_resi = np.max(resi_filters)
+
+        with open(f'{self.out_folder}/visual_goodness_of_fit.txt', 'w') as f:
+            f.write("# ========== Goodness-of-Fit Metrics ==========\n")
+            f.write(f"{'Degrees of freedom:':<25} {n_free}\n")
+            f.write(f"{'Reduced χ²:':<25} {re_chi2:.4f}\n")
+            f.write(f"{'Vgf-adjusted χ²:':<25} {chi2_vgf:.4f}\n")
+            f.write(f"{'Vgfb-adjusted χ²:':<25} {chi2_vgfb:.4f}\n")
+            f.write(f"{'Max residual:':<25} {max_resi:.4f}\n\n")  # 空行分隔
+
+            f.write("# ========== Filter Residuals ==========\n")
+            f.write("# Columns: Filter_Name  Residual  Remark\n")
+            f.write("# (* marks residuals > 0.5)\n")
+        
+            for idx in range(len(filters)):
+                name = filters[idx]
+                res = resi_filters[idx]
+        
+                remark = ""
+                if res > 0.5:
+                    remark = "(* needs check)"
+                elif idx < 2:  
+                    remark = "(first two)"
+            
+                f.write(f"{name:<15} {res:.4f}    {remark}\n")
+        pd.DataFrame({'Filter': filters, 'Residual': resi_filters}).to_csv(f'{self.out_folder}/fluxs_residuals.csv', index=False)
+
+
+        if self.pdf:
+            plt.savefig(f'{self.out_folder}/SEDOC.pdf', bbox_inches='tight')
+        if self.png:
+            plt.savefig(f'{self.out_folder}/SEDOC.png', bbox_inches='tight')
+        pass
+
 
     def SED(self, ax):
         """Plot the SED model."""
@@ -940,33 +1210,25 @@ class SEDPlotter:
 
     def SED_binary(self, ax, ww, flx):
         """Plot the binary SED model."""        
-        #另外一种并合方式
-        # 自己想一想
         ww1 = np.array(ww[0])
         ww2 = np.array(ww[1])
         flx1 = np.array(flx[0])
         flx2 = np.array(flx[1])
-
-        # 找到共同的波长范围
         min_wave = max(ww1.min(), ww2.min())
         max_wave = min(ww1.max(), ww2.max())
 
-        # 创建新的波长数组
         if min_wave < max_wave:
-            # 根据较长的波长数组生成新的波长
             len_common_1 = np.sum((ww1>=min_wave) & (ww1<= max_wave))
             len_common_2 = np.sum((ww2>=min_wave) & (ww2<= max_wave))
             len_new = max(len_common_1, len_common_2)
             ww_new = np.linspace(min_wave, max_wave, num=len_new)
 
-            # 插值
+        
             interp_flx1 = interp1d(ww1, flx1, bounds_error=False, fill_value=0)
             interp_flx2 = interp1d(ww2, flx2, bounds_error=False, fill_value=0)
 
-            # 计算新的流量
             flx_new = interp_flx1(ww_new) + interp_flx2(ww_new)
         
-            # 合并不重叠的范围
             if min_wave == ww1.min():
                 if interp_flx2(ww_new)[0]/interp_flx1(ww_new)[0] > 0.01:
                     mask_below = ww2 < min_wave
@@ -996,11 +1258,9 @@ class SEDPlotter:
                     flx_new = np.concatenate((flx_new, flx1[mask_above]))
 
         else:
-            # 没有共同范围，直接合并各自的数据
             ww_new = np.concatenate((ww1, ww2))
             flx_new = np.concatenate((flx1, flx2))    
 
-        # 绘图
         ax.plot(ww_new, flx_new, lw=1.25, color=self.model_color_all, 
                 zorder=5,label = 'binary')
         
@@ -1008,7 +1268,6 @@ class SEDPlotter:
         data = np.column_stack((ww_new, flx_new))
         np.savetxt(f'{self.out_folder}/binary_SED.dat', data, fmt=['%f', '%.11e'],
                        header='wavelength(um) wave*flux(erg cm-2 s-2)', delimiter='\t')
-        # flux得想办法大一点，不然都是0
 
         return ww_new, flx_new
 

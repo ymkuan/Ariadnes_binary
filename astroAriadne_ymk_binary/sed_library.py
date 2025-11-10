@@ -263,10 +263,7 @@ def prior_transform_multinest(u, flux, flux_er, filts, prior_dict, coordinator,
         i += 1
     pass
 def check_flux_nan(flux, teff, logg, filts, model):
-    '''
-    发现koesterWD的模型，在温度40000K时，插值出现nan的情况
-    于是这个代码就是为了检验是否有nan值有的话，替换掉
-    '''
+
     nan_indices = np.where(np.isnan(flux))[0]
     
     for dex in nan_indices:
@@ -274,19 +271,19 @@ def check_flux_nan(flux, teff, logg, filts, model):
         if model.lower() == 'koesterbb':
             with open(gridsdir + '/KoesterBB_DF.pkl', 'rb') as wd:
                 wd_pkl = pd.read_pickle(wd)
-            points_2d = wd_pkl.index.droplevel('[Fe/H]').to_frame(index=False).values  # 只取 logg 和 Teff
-            values = wd_pkl[filt].values  # 插值目标值
+            points_2d = wd_pkl.index.droplevel('[Fe/H]').to_frame(index=False).values 
+            values = wd_pkl[filt].values  
             new_points_2d = [logg, teff]
             
-            # 进行二维插值
+
             flux_interp = griddata(points_2d, values, new_points_2d, method='linear')
             flux[dex] = flux_interp
 
         if model.lower() == 'koester':
             with open(gridsdir + '/Koester_DF.pkl', 'rb') as wd:
                 wd_pkl = pd.read_pickle(wd)
-            points_2d = wd_pkl.index.droplevel('[Fe/H]').to_frame(index=False).values  # 只取 logg 和 Teff
-            values = wd_pkl[filt].values  # 插值目标值
+            points_2d = wd_pkl.index.droplevel('[Fe/H]').to_frame(index=False).values  
+            values = wd_pkl[filt].values 
             new_points_2d = [logg, teff]
             
             # 进行二维插值
@@ -296,11 +293,11 @@ def check_flux_nan(flux, teff, logg, filts, model):
         if model.lower() == 'tmap':
             with open(gridsdir + '/Tmap_DF.pkl', 'rb') as sdb:
                 sdb_pkl = pd.read_pickle(sdb)
-            points_2d = sdb_pkl.index.droplevel('[Fe/H]').to_frame(index=False).values  # 只取 logg 和 Teff
-            values = sdb_pkl[filt].values  # 插值目标值
+            points_2d = sdb_pkl.index.droplevel('[Fe/H]').to_frame(index=False).values 
+            values = sdb_pkl[filt].values  
             new_points_2d = [logg, teff]
             
-            # 进行二维插值
+
             flux_interp = griddata(points_2d, values, new_points_2d, method='linear')
             flux[dex] = flux_interp
     return flux
