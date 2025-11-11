@@ -147,4 +147,7 @@ Models_Dir
 
 # How to use?
 
-see example.py
+See the example in example_LAMOSTJ1013+2724.ipynb, 
+where we performed a binary spectral energy distribution (SED) fitting 
+for a white dwarf-main sequence (WDMS) system. 
+Reference: https://iopscience.iop.org/article/10.3847/1538-4357/adc0fa/pdf
