@@ -133,12 +133,14 @@ Models_Dir
 └───KoesterWD
 	 │
      └─── koester
-	        └───daxxx.dk.da.fits
+	        └───da05000_650.dk.dat.fits
+            └───......
 └───Subdwarf_TMAP
 	 │
      └─── sp
 	        └───T20000_logg4.50.csv
 			└───......
+```
 ### Notes:
 - The Phoenix v2 models with alpha enhancements are unused
 - BT-models are BT-Settl, BT-Cond, and BT-NextGen
