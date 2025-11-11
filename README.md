@@ -15,7 +15,8 @@ Two additional models have been integrated:
 - **Koester model** — for white dwarfs  
 - **TMAP model** — for hot subdwarfs  
 
-These models can be combined with the main-sequence star model to fit composite binary SEDs.
+These models can be combined in pairs to fit composite binary SEDs — for example, WD+MS, MS+MS, or WD+WD systems.
+
 
 ---
 
