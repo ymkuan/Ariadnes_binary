@@ -43,8 +43,8 @@ them!
 | BT-Models      | <http://svo2.cab.inta-csic.es/theory/newov2/>  |
 | Castelli & Kurucz | <http://ssb.stsci.edu/cdbs/tarfiles/synphot3.tar.gz>      |
 | Kurucz 1993 | <http://ssb.stsci.edu/cdbs/tarfiles/synphot4.tar.gz>  |
-| Koester WD  | <https://svo2.cab.inta-csic.es//theory/newov2/temp/models/tar/models_1762818096.tgz>  |
-| TMAP        | <https://drive.google.com/file/d/1yKHB3uB7QUyhhkwa1hNMuWazxjLkLAjN/view>
+| Koester WD  | <https://drive.google.com/drive/folders/1mGzuvirCOg9O1rk4SZ7gMoHUlAx7k6aO?usp=drive_link>  |
+| TMAP        | <https://drive.google.com/drive/folders/1OpuXWJRz2Pw0b6YRtLRnNfCZXhNAz6he?usp=drive_link>
 
 The wavelength file for the Phoenix model has to be placed in the root folder
 of the PHOENIXv2 models.
