@@ -573,8 +573,10 @@ class SEDPlotter:
 
         errs_vgf = np.maximum(errs, 0.02 * flxs)
         chi2_vgf = np.sum(((flxs - model_flux) / errs_vgf) **2 ) / n_free
+        vgf = np.sqrt(chi2_vgf)
         errs_vgfb = np.maximum(errs, 0.1 * flxs)
-        chi2_vgfb = np.sum(((flxs - model_flux) / errs_vgfb) **2 ) / n_free 
+        chi2_vgfb = np.sum(((flxs - model_flux) / errs_vgfb) **2 ) / n_free
+        vgfb = np.sqrt(chi2_vgfb) 
         resi_filters = abs(flxs - model_flux) / abs(flxs)
         max_resi = np.max(resi_filters)
 
@@ -583,8 +585,8 @@ class SEDPlotter:
             f.write("# ========== Goodness-of-Fit Metrics ==========\n")
             f.write(f"{'Degrees of freedom:':<25} {n_free}\n")
             f.write(f"{'Reduced χ²:':<25} {re_chi2:.4f}\n")
-            f.write(f"{'Vgf-adjusted χ²:':<25} {chi2_vgf:.4f}\n")
-            f.write(f"{'Vgfb-adjusted χ²:':<25} {chi2_vgfb:.4f}\n")
+            f.write(f"{'Vgf-adjusted:':<25} {vgf:.4f}\n")
+            f.write(f"{'Vgfb-adjusted:':<25} {vgfb:.4f}\n")
             f.write(f"{'Max residual:':<25} {max_resi:.4f}\n\n") 
 
             f.write("# ========== Filter Residuals ==========\n")
@@ -804,8 +806,10 @@ class SEDPlotter:
 
         errs_vgf = np.maximum(errs, 0.02 * flxs)
         chi2_vgf = np.sum(((flxs - model_flux) / errs_vgf) **2 ) / n_free
+        vgf = np.sqrt(chi2_vgf)
         errs_vgfb = np.maximum(errs, 0.1 * flxs)
         chi2_vgfb = np.sum(((flxs - model_flux) / errs_vgfb) **2 ) / n_free 
+        vgfb = np.sqrt(chi2_vgfb)
         resi_filters = abs(flxs - model_flux) / abs(flxs)
         max_resi = np.max(resi_filters)
 
@@ -813,8 +817,8 @@ class SEDPlotter:
             f.write("# ========== Goodness-of-Fit Metrics ==========\n")
             f.write(f"{'Degrees of freedom:':<25} {n_free}\n")
             f.write(f"{'Reduced χ²:':<25} {re_chi2:.4f}\n")
-            f.write(f"{'Vgf-adjusted χ²:':<25} {chi2_vgf:.4f}\n")
-            f.write(f"{'Vgfb-adjusted χ²:':<25} {chi2_vgfb:.4f}\n")
+            f.write(f"{'Vgf-adjusted:':<25} {vgf:.4f}\n")
+            f.write(f"{'Vgfb-adjusted:':<25} {vgfb:.4f}\n")
             f.write(f"{'Max residual:':<25} {max_resi:.4f}\n\n")  # 空行分隔
 
             f.write("# ========== Filter Residuals ==========\n")
